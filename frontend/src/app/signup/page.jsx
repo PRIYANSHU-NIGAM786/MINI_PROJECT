@@ -1,30 +1,24 @@
 'use client'
 
-import React from 'react';
 import axios from 'axios';
 import { useFormik } from 'formik';
+import React from 'react';
 import * as Yup from 'yup';
 
+// Ekdum simple schema testing ke liye
 const SignupSchema = Yup.object().shape({
-  name: Yup.string()
-    .min(2, 'Too Short!')
-    .max(50, 'Too Long!')
-    .required('Full name is required'),
+   name: Yup.string()
+     .min(2, 'Too Short!')
+     .required('Name is required'),
+   
+   email: Yup.string().email('Invalid email').required('Email is required'),
+   
+   password: Yup.string()
+              .min(6, 'Minimum 6 characters required')
+              .required('Password is required'),
 
-  email: Yup.string()
-    .email('Invalid email')
-    .required('Email is required'),
-
-  password: Yup.string()
-    .required('Password is required')
-    .matches(/[a-z]/, 'Must contain lowercase letter')
-    .matches(/[A-Z]/, 'Must contain uppercase letter')
-    .matches(/[0-9]/, 'Must contain number')
-    .matches(/\W/, 'Must contain special character')
-    .min(6, 'Minimum 6 characters required'),
-
-  confirmPassword: Yup.string()
-    .required('Confirm password is required')
+   confirmPassword : Yup.string()
+    .required('Confirm your password')   
     .oneOf([Yup.ref('password')], 'Passwords must match')
 });
 
@@ -37,228 +31,133 @@ const Signup = () => {
       password: '',
       confirmPassword: ''
     },
-
     validationSchema: SignupSchema,
-
     onSubmit: async (values) => {
+      console.log("Sending data to backend:", values);
       try {
-        console.log(values);
-
-        const res = await axios.post(
-          'http://localhost:5000/user/add',
-          values
-        );
-
-        if (res.status === 200 || res.status === 201) {
-          alert('Account Created Successfully ✈️');
+        const res = await axios.post('http://localhost:5000/user/add', values);
+        console.log("Backend Response:", res.data);
+        
+        if(res.status === 200){
+            alert("🎒 Registration Successful!");
+            signupForm.resetForm();
         }
       } catch (error) {
-        console.log(error);
-        alert('Something went wrong');
+         console.error("❌ Connection Error:", error);
+         alert("Backend server checked? Port 5000 is not responding.");
       }
     }
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-950 via-blue-900 to-cyan-700 flex items-center justify-center px-4 py-10">
-
-      {/* Background Effects */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-400 rounded-full blur-3xl opacity-20"></div>
-
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20"></div>
-
-      <div className="hidden lg:block absolute left-10 bottom-10 text-[120px] opacity-20 animate-bounce">
-        🌍
-      </div>
-
-      <div className="hidden lg:block absolute right-10 top-10 text-[100px] opacity-20 animate-pulse">
-        ✈️
-      </div>
-
-      {/* Card */}
-      <div className="w-full max-w-lg backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8">
-
-        {/* Logo */}
+    <div 
+      className='min-h-screen py-12 px-4 flex items-center justify-center relative bg-cover bg-center'
+      style={{ 
+        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop')` 
+      }}
+    >
+      {/* Travel Modern Glass Card */}
+      <div className="max-w-md w-full space-y-6 bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 text-white">
+        
+        {/* Header */}
         <div className="text-center">
-
-          <div className="text-6xl mb-4 animate-bounce">
-            ✈️
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-500 rounded-full text-slate-900 shadow-lg mb-3">
+            <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" />
+            </svg>
           </div>
-
-          <h1 className="text-4xl font-extrabold text-white">
-            TravelMate
-          </h1>
-
-          <p className="text-cyan-100 mt-3">
-            Plan your dream trips and unforgettable adventures
-          </p>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-8">
-
-            <div>
-              <h3 className="text-white text-xl font-bold">
-                150+
-              </h3>
-              <p className="text-xs text-cyan-100">
-                Destinations
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-white text-xl font-bold">
-                10K+
-              </h3>
-              <p className="text-xs text-cyan-100">
-                Travelers
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-white text-xl font-bold">
-                500+
-              </h3>
-              <p className="text-xs text-cyan-100">
-                Tours
-              </p>
-            </div>
-
-          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-white">Travel Itinerary Planner</h2>
+          <p className="mt-1 text-xs text-slate-300">Create an account to start your journey</p>
         </div>
 
         {/* Form */}
-        <form
-          onSubmit={signupForm.handleSubmit}
-          className="mt-8 space-y-5"
-        >
-
+        <form onSubmit={signupForm.handleSubmit} className="space-y-4">
+          
           {/* Name */}
           <div>
-            <label className="block text-white mb-2">
-              Full Name
-            </label>
-
-            <input
+            <label htmlFor="name" className="block text-xs font-semibold text-amber-400 mb-1">Full Name</label>
+            <input 
               type="text"
               id="name"
-              placeholder="Enter your full name"
+              placeholder="Priyanshu"
               onChange={signupForm.handleChange}
               onBlur={signupForm.handleBlur}
               value={signupForm.values.name}
-              className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-gray-200 focus:ring-2 focus:ring-cyan-400 outline-none"
+              className="w-full py-2 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm text-white placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 transition-all" 
             />
-
-            {signupForm.touched.name &&
-              signupForm.errors.name && (
-                <p className="text-red-300 text-sm mt-1">
-                  {signupForm.errors.name}
-                </p>
-              )}
+            {signupForm.errors.name && signupForm.touched.name && (
+              <p className="text-xs text-red-400 mt-1">⚠️ {signupForm.errors.name}</p>
+            )}
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-white mb-2">
-              Email Address
-            </label>
-
-            <input
-              type="email"
+            <label htmlFor="email" className="block text-xs font-semibold text-amber-400 mb-1">Email Address</label>
+            <input 
+              type="email" 
               id="email"
-              placeholder="Enter your email"
+              placeholder="test@travel.com"
               onChange={signupForm.handleChange}
               onBlur={signupForm.handleBlur}
               value={signupForm.values.email}
-              className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-gray-200 focus:ring-2 focus:ring-cyan-400 outline-none"
+              className="w-full py-2 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm text-white placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 transition-all" 
             />
-
-            {signupForm.touched.email &&
-              signupForm.errors.email && (
-                <p className="text-red-300 text-sm mt-1">
-                  {signupForm.errors.email}
-                </p>
-              )}
+            {signupForm.errors.email && signupForm.touched.email && (
+              <p className="text-xs text-red-400 mt-1">⚠️ {signupForm.errors.email}</p>
+            )}
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-white mb-2">
-              Password
-            </label>
-
-            <input
-              type="password"
+            <label htmlFor="password" className="block text-xs font-semibold text-amber-400 mb-1">Password</label>
+            <input 
+              type="password" 
               id="password"
-              placeholder="Create password"
+              placeholder="Min 6 characters"
               onChange={signupForm.handleChange}
               onBlur={signupForm.handleBlur}
               value={signupForm.values.password}
-              className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-gray-200 focus:ring-2 focus:ring-cyan-400 outline-none"
+              className="w-full py-2 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm text-white placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 transition-all" 
             />
-
-            {signupForm.touched.password &&
-              signupForm.errors.password && (
-                <p className="text-red-300 text-sm mt-1">
-                  {signupForm.errors.password}
-                </p>
-              )}
+            {signupForm.errors.password && signupForm.touched.password && (
+              <p className="text-xs text-red-400 mt-1">⚠️ {signupForm.errors.password}</p>
+            )}
           </div>
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-white mb-2">
-              Confirm Password
-            </label>
-
-            <input
+            <label htmlFor="confirmPassword" className="block text-xs font-semibold text-amber-400 mb-1">Confirm Password</label>
+            <input 
               type="password"
-              id="confirmPassword"
-              placeholder="Confirm password"
+              id='confirmPassword'
+              placeholder="Repeat password"
               onChange={signupForm.handleChange}
               onBlur={signupForm.handleBlur}
               value={signupForm.values.confirmPassword}
-              className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-gray-200 focus:ring-2 focus:ring-cyan-400 outline-none"
+              className="w-full py-2 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm text-white placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 transition-all" 
             />
-
-            {signupForm.touched.confirmPassword &&
-              signupForm.errors.confirmPassword && (
-                <p className="text-red-300 text-sm mt-1">
-                  {signupForm.errors.confirmPassword}
-                </p>
-              )}
-          </div>
-
-          {/* Terms */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4"
-            />
-
-            <span className="text-cyan-100 text-sm">
-              I agree to the Terms & Conditions
-            </span>
+            {signupForm.errors.confirmPassword && signupForm.touched.confirmPassword && (
+              <p className="text-xs text-red-400 mt-1">⚠️ {signupForm.errors.confirmPassword}</p>
+            )}
           </div>
 
           {/* Button */}
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:scale-105 transition-all duration-300 shadow-lg"
+          <button 
+            type="submit" 
+            className="w-full mt-2 py-2.5 px-4 font-bold text-sm rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-400 active:scale-98 transition-all shadow-md cursor-pointer"
           >
-            🚀 Start Exploring
+            Sign Up 🚀
           </button>
-
-          <p className="text-center text-cyan-100 text-sm">
-            Already have an account?{' '}
-            <span className="text-white font-semibold cursor-pointer hover:underline">
-              Sign In
-            </span>
-          </p>
-
         </form>
+
+        <div className="text-center pt-2 border-t border-white/10 text-xs text-slate-400">
+          Already have an account? <a href="#" className="text-amber-400 font-bold">Log In</a>
+        </div>
+
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default Signup;
