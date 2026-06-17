@@ -81,4 +81,38 @@ router.delete('/delete/:id', (req, res) => {
    });
 });
 
+
+
+
+// 7. User Login / Authentication Route
+router.post('/authenticate', (req, res) => {
+   const { email, password } = req.body;
+
+   // Database mein check karo ki is email ka koi user hai ya nahi
+   UserModel.findOne({ email: email })
+   .then((result) => {
+      if (result) {
+         // Agar user mil gaya, toh check karo password match ho raha hai ya nahi
+         if (result.password === password) {
+            // Success: Email aur password dono sahi hain!
+            res.status(200).json(result);
+         } else {
+            // Error: Password galat hai
+            res.status(401).json({ message: "Password galat hai! Please check again." });
+         }
+      } else {
+         // Error: Email hi database mein nahi hai
+         res.status(404).json({ message: "Yeh email registered nahi hai!" });
+      }
+   })
+   .catch((err) => {
+      console.error("Login server error:", err);
+      res.status(500).json(err);
+   });
+});
+
+
+
+
+
 module.exports = router;
