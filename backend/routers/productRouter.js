@@ -1,12 +1,12 @@
 const express = require('express');
-const Model = require('../models/productModel'); // Ensure case-sensitivity matches your file system
+const mongoose = require('mongoose'); // 🌟 FIXED: Mongoose require karna zaroori tha
+const Model = require('../models/productModel'); 
 
 const router = express.Router();
 
 // 1. Add New Product / Travel Itinerary Package
 router.post('/add', (req, res) => {
    console.log("New Itinerary/Product Data Received:", req.body);
-
    new Model(req.body).save()
    .then(result => {
       res.status(200).json(result);
@@ -29,7 +29,7 @@ router.get('/getall', (req, res) => {
    });
 });
 
-// 3. Get Products By City (Very useful for Travel Destination search!)
+// 3. Get Products By City (Useful for Travel Destination search!)
 router.get('/getbycity/:city', (req, res) => {
    Model.find({ city: req.params.city })
    .then((result) => {
@@ -43,7 +43,6 @@ router.get('/getbycity/:city', (req, res) => {
 
 // 4. Get Product By ID
 router.get('/getbyid/:id', (req, res) => {
-   // FIXED: findById mein direct id string jati hai, object nahi
    Model.findById(req.params.id)
    .then((result) => {
       if (!result) return res.status(404).json({ message: "Product/Itinerary not found!" });
@@ -55,11 +54,15 @@ router.get('/getbyid/:id', (req, res) => {
    });
 });
 
-// 5. Update Product By ID
+// 5. Update Product By ID (🌟 FIXED: Cleaned and single route kept)
 router.put('/update/:id', (req, res) => {
    Model.findByIdAndUpdate(req.params.id, req.body, { new: true })
    .then((result) => {
-      res.status(200).json(result);
+      if (result) {
+          res.status(200).json(result);
+      } else {
+          res.status(404).json({ message: "Trip not found" });
+      }
    })
    .catch((err) => {
       console.error("Error updating product:", err);
@@ -69,7 +72,6 @@ router.put('/update/:id', (req, res) => {
 
 // 6. Delete Product By ID
 router.delete('/delete/:id', (req, res) => {
-   // FIXED: findByIdAndDelete mein direct id string jati hai, object nahi
    Model.findByIdAndDelete(req.params.id)
    .then((result) => {
       res.status(200).json({ message: "Product/Itinerary successfully deleted", data: result }); 
@@ -77,6 +79,18 @@ router.delete('/delete/:id', (req, res) => {
    .catch((err) => {
       console.error("Error deleting product:", err);
       res.status(500).json(err);
+   });
+});
+
+// 7. 🌟 GET BY USER (Dashboard filtering route - FIXED with correct model)
+router.get('/getbyuser/:userid', (req, res) => {
+   Model.find({ createdBy: req.params.userid })
+   .then((result) => {
+       res.status(200).json(result);
+   })
+   .catch((err) => {
+       console.error("Fetch by user error:", err);
+       res.status(500).json(err);
    });
 });
 

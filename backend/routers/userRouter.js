@@ -1,5 +1,4 @@
 const express = require('express');
-// FIXED: ProductModel ki jagah userModel import kiya hai
 const UserModel = require('../models/userModel'); 
 
 const router = express.Router();
@@ -8,7 +7,6 @@ const router = express.Router();
 router.post('/add', (req, res) => {
    console.log("Signup Data Received:", req.body);
 
-   // Password secure hashing (bcrypt) real projects mein yahan lagayi jati hai
    new UserModel(req.body).save()
    .then(result => {
       res.status(200).json(result);
@@ -31,7 +29,7 @@ router.get('/getall', (req, res) => {
    });
 });
 
-// 3. Get User By City (Travel Feature ke liye mast hai)
+// 3. Get User By City (Travel Feature)
 router.get('/getbycity/:city', (req, res) => {
    UserModel.find({ city: req.params.city })
    .then((result) => {
@@ -45,7 +43,6 @@ router.get('/getbycity/:city', (req, res) => {
 
 // 4. Get User By ID
 router.get('/getbyid/:id', (req, res) => {
-   // FIXED: findById mein direct id string jati hai, object nahi
    UserModel.findById(req.params.id)
    .then((result) => {
       if(!result) return res.status(404).json({ message: "User not found!" });
@@ -81,27 +78,20 @@ router.delete('/delete/:id', (req, res) => {
    });
 });
 
-
-
-
-// 7. User Login / Authentication Route
-router.post('/authenticate', (req, res) => {
+// 7. 🌟 FIXED USER LOGIN ROUTE (Naam /authenticate se badal kar /login kar diya hai)
+router.post('/login', (req, res) => {
    const { email, password } = req.body;
 
-   // Database mein check karo ki is email ka koi user hai ya nahi
    UserModel.findOne({ email: email })
    .then((result) => {
       if (result) {
-         // Agar user mil gaya, toh check karo password match ho raha hai ya nahi
          if (result.password === password) {
-            // Success: Email aur password dono sahi hain!
+            // Success: Frontend ko user object bhej rahe hain
             res.status(200).json(result);
          } else {
-            // Error: Password galat hai
             res.status(401).json({ message: "Password galat hai! Please check again." });
          }
       } else {
-         // Error: Email hi database mein nahi hai
          res.status(404).json({ message: "Yeh email registered nahi hai!" });
       }
    })
@@ -110,9 +100,5 @@ router.post('/authenticate', (req, res) => {
       res.status(500).json(err);
    });
 });
-
-
-
-
 
 module.exports = router;

@@ -1,146 +1,140 @@
 'use client'
 
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
-import React from 'react';
-import * as Yup from 'yup';
-
-const ItinerarySchema = Yup.object().shape({
-   title: Yup.string().required('Give a title to your trip'),
-   city: Yup.string().required('Destination city is required'),
-   weather: Yup.string().required('Select expected weather'),
-   duration: Yup.number().positive().integer().required('Number of days is required'),
-   budget: Yup.string().required('Select your budget range')
-});
+import axios from 'axios';
 
 const CreateItinerary = () => {
+  const [isVerifying, setIsVerifying] = useState(true);
+
+  // 🌟 1. PAGE GUARD: Page open hote hi security check karega
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser || storedUser === "undefined") {
+        alert("Security Alert: Please login first! 🔐");
+        window.location.replace('/login');
+      } else {
+        setIsVerifying(false); // Logged in hai toh page render karne do
+      }
+    }
+  }, []);
 
   const itineraryForm = useFormik({
     initialValues: {
       title: '',
       city: '',
-      weather: '',
-      duration: '',
-      budget: ''
+      weather: '☀️ Sunny / Warm',
+      duration: 1,
+      budget: '💼 Moderate (Mid-range)',
+      daysSchedule: [''] // Array to hold per day activities
     },
-    validationSchema: ItinerarySchema,
-    onSubmit: async (values) => {
-      console.log("Submitting Travel Plan to Product/Itinerary DB:", values);
-      try {
-        // Yeh data Product Router ke 'product/add' endpoint par jayega
-        const res = await axios.post('http://localhost:5000/product/add', values);
-        if(res.status === 200){
-            alert("✈️ Route Locked! Travel Itinerary Created Successfully.");
+    onSubmit: async (values, { setSubmitting }) => {
+      console.log("Submitting Full Travel Plan with Daily Schedule:", values);
+      
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        const loggedInUser = JSON.parse(storedUser);
+        
+        // Form values ke sath user ki unique _id merge kar di
+        const finalFormData = { ...values, createdBy: loggedInUser._id };
+
+        try {
+          const res = await axios.post('http://localhost:5000/product/add', finalFormData);
+          if (res.status === 200) {
+            alert("🚀 Route & Daily Schedule Locked Successfully!");
             itineraryForm.resetForm();
+            
+            // 🌟 REDIRECTION FIXED: Ab alert ke baad direct dashboard khulega
+            window.location.replace('/dashboard');
+          }
+        } catch (error) {
+          console.error("❌ Error:", error);
+          alert("Server error! Make sure backend is running.");
+        } finally {
+          setSubmitting(false); // Button loading state se bahar aa jayega
         }
-      } catch (error) {
-         console.error("❌ Error creating itinerary:", error);
-         alert("Server error! Make sure backend is running.");
       }
     }
   });
 
+  // 🌟 2. DYNAMIC INPUTS: Duration change hone par input boxes create karna
+  useEffect(() => {
+    const targetCount = parseInt(itineraryForm.values.duration) || 1;
+    const currentArray = itineraryForm.values.daysSchedule;
+    if (currentArray.length !== targetCount) {
+      const newArray = Array.from({ length: targetCount }, (_, i) => currentArray[i] || '');
+      itineraryForm.setFieldValue('daysSchedule', newArray);
+    }
+  }, [itineraryForm.values.duration]);
+
+  // Jab tak verification chal rahi hai, screen blank ya loading dikhegi
+  if (isVerifying) {
+    return <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center">📡 Securing route...</div>;
+  }
+
   return (
-    <div 
-      className='min-h-screen py-10 px-4 flex items-center justify-center relative bg-cover bg-center'
-      style={{ 
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop')` 
-      }}
-    >
-      <div className="max-w-xl w-full bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 text-white">
-        
-        {/* Header */}
-        <div className="text-center mb-6">
-          <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-            Plan New Adventure
-          </span>
-          <h2 className="text-3xl font-extrabold mt-2 text-white">Create Itinerary</h2>
-          <p className="text-xs text-slate-300 mt-1">Fill in the details to generate your dream travel route</p>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl w-full max-w-2xl shadow-2xl">
+        <h2 className="text-3xl font-black text-center text-white mb-1">Create Itinerary</h2>
+        <p className="text-xs text-slate-400 text-center mb-6">Set duration to unlock day-by-day scheduling</p>
 
-        {/* Form */}
-        <form onSubmit={itineraryForm.handleSubmit} className="space-y-4">
-          
-          {/* Trip Title */}
+        <form onSubmit={itineraryForm.handleSubmit} className="space-y-4 text-sm">
           <div>
-            <label className="block text-xs font-semibold text-amber-400 mb-1">Trip Plan Title</label>
-            <input 
-              type="text" id="title" placeholder="e.g. Summer Vacation in Mountains" 
-              onChange={itineraryForm.handleChange} value={itineraryForm.values.title}
-              className="w-full py-2.5 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm focus:outline-hidden focus:border-amber-500 text-white" 
-            />
-            {itineraryForm.errors.title && itineraryForm.touched.title && <p className="text-xs text-red-400 mt-1">⚠️ {itineraryForm.errors.title}</p>}
+            <label className="text-xs text-slate-400 block mb-1">Trip Plan Title</label>
+            <input type="text" name="title" onChange={itineraryForm.handleChange} value={itineraryForm.values.title} className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-white" placeholder="e.g. Europe Backpacking" required />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Destination City */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-amber-400 mb-1">Destination City</label>
-              <input 
-                type="text" id="city" placeholder="e.g. Manali, Goa, Paris" 
-                onChange={itineraryForm.handleChange} value={itineraryForm.values.city}
-                className="w-full py-2.5 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm focus:outline-hidden focus:border-amber-500 text-white" 
-              />
-              {itineraryForm.errors.city && itineraryForm.touched.city && <p className="text-xs text-red-400 mt-1">⚠️ {itineraryForm.errors.city}</p>}
+              <label className="text-xs text-slate-400 block mb-1">Destination City</label>
+              <input type="text" name="city" onChange={itineraryForm.handleChange} value={itineraryForm.values.city} className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-white" placeholder="Goa, Paris, etc." required />
             </div>
-
-            {/* Weather Selection */}
             <div>
-              <label className="block text-xs font-semibold text-amber-400 mb-1">Expected Weather</label>
-              <select 
-                id="weather" onChange={itineraryForm.handleChange} value={itineraryForm.values.weather}
-                className="w-full py-2.5 px-4 bg-slate-900 border border-white/20 rounded-xl text-sm focus:outline-hidden focus:border-amber-500 text-white"
-              >
-                <option value="" disabled>Select Weather...</option>
-                <option value="Snowy / Freezing">❄️ Snowy / Freezing</option>
-                <option value="Cold / Pleasant">🍃 Cold / Pleasant</option>
-                <option value="Sunny / Warm">☀️ Sunny / Warm</option>
-                <option value="Rainy / Monsoon">🌧️ Rainy / Monsoon</option>
+              <label className="text-xs text-slate-400 block mb-1">Expected Weather</label>
+              <select name="weather" onChange={itineraryForm.handleChange} value={itineraryForm.values.weather} className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-white">
+                <option value="☀️ Sunny / Warm">☀️ Sunny / Warm</option>
+                <option value="🌧️ Monsoon / Rainy">🌧️ Monsoon / Rainy</option>
+                <option value="❄️ Snowy / Freezing">❄️ Snowy / Freezing</option>
               </select>
-              {itineraryForm.errors.weather && itineraryForm.touched.weather && <p className="text-xs text-red-400 mt-1">⚠️ {itineraryForm.errors.weather}</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Duration Days */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-amber-400 mb-1">Duration (In Days)</label>
-              <input 
-                type="number" id="duration" placeholder="e.g. 5" 
-                onChange={itineraryForm.handleChange} value={itineraryForm.values.duration}
-                className="w-full py-2.5 px-4 bg-slate-900/40 border border-white/20 rounded-xl text-sm focus:outline-hidden focus:border-amber-500 text-white" 
-              />
-              {itineraryForm.errors.duration && itineraryForm.touched.duration && <p className="text-xs text-red-400 mt-1">⚠️ {itineraryForm.errors.duration}</p>}
+              <label className="text-xs text-slate-400 block mb-1">Duration (In Days)</label>
+              <input type="number" name="duration" min="1" max="30" onChange={itineraryForm.handleChange} value={itineraryForm.values.duration} className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-white" required />
             </div>
-
-            {/* Budget Dropdown */}
             <div>
-              <label className="block text-xs font-semibold text-amber-400 mb-1">Budget Tier</label>
-              <select 
-                id="budget" onChange={itineraryForm.handleChange} value={itineraryForm.values.budget}
-                className="w-full py-2.5 px-4 bg-slate-900 border border-white/20 rounded-xl text-sm focus:outline-hidden focus:border-amber-500 text-white"
-              >
-                <option value="" disabled>Select Budget...</option>
-                <option value="Budget (Backpacker)">🎒 Budget (Backpacker)</option>
-                <option value="Moderate (Mid-range)">💼 Moderate (Mid-range)</option>
-                <option value="Luxury (Premium)">👑 Luxury (Premium)</option>
+              <label className="text-xs text-slate-400 block mb-1">Budget Tier</label>
+              <select name="budget" onChange={itineraryForm.handleChange} value={itineraryForm.values.budget} className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-white">
+                <option value="🎒 Budget (Backpacker)">🎒 Budget (Backpacker)</option>
+                <option value="💼 Moderate (Mid-range)">💼 Moderate (Mid-range)</option>
+                <option value="👑 Luxury (Premium)">👑 Luxury (Premium)</option>
               </select>
-              {itineraryForm.errors.budget && itineraryForm.touched.budget && <p className="text-xs text-red-400 mt-1">⚠️ {itineraryForm.errors.budget}</p>}
             </div>
           </div>
 
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            className="w-full mt-4 py-3 px-4 font-bold text-sm rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-400 active:scale-98 transition-all shadow-lg cursor-pointer uppercase tracking-wider"
-          >
-            Generate My Route Map 🗺️
+          {/* Micro Day-by-Day Schedule Boxes */}
+          <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
+            <span className="text-xs font-bold text-amber-500 block">🗺️ Day-by-Day Micro Plans</span>
+            <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
+              {itineraryForm.values.daysSchedule.map((dayText, index) => (
+                <div key={index} className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-500 font-bold">DAY {index + 1} ACTIVITY</span>
+                  <input type="text" value={dayText} onChange={(e) => itineraryForm.setFieldValue(`daysSchedule.${index}`, e.target.value)} className="w-full py-2 px-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200" placeholder={`What are you planning for Day ${index + 1}?`} required />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" disabled={itineraryForm.isSubmitting} className="w-full bg-amber-500 text-slate-900 py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-amber-400 transition-all cursor-pointer disabled:opacity-50 mt-2">
+            {itineraryForm.isSubmitting ? 'PROCESSING RADAR... 📡' : 'Generate My Route Map 🗺️'}
           </button>
-
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default CreateItinerary;
